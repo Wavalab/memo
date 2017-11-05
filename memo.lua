@@ -1,44 +1,32 @@
 --[[
 
   Simple Corona event delegation.
+  "R"/"L" = Runtime/Local
+  "F"/"T" = Function/Table
+  `.peak` allows you to access the last data state of any channel
 
 --]]
 
 local memo = {}
-local state = {} -- Store current/most recent event data for each channel
+local state = {}
 
--- Publish a global event on @channel with @data
-function memo.pub(channel, data)
-  Runtime:dispatchEvent({name = channel, data = data})
-  state[channel] = data
+function memo.pub(ev, payload)
+  Runtime:dispatchEvent({name = ev, data = payload})
+  state[ev] = data
 end
 
--- Subscribe function @fn to @channel
--- Can access data via `event.data` @fn args `function(event)`
-function memo.sub(channel, fn)
-  Runtime:addEventListener(channel, fn)
-end
+function memo.subRF(ev, fn) Runtime:addEventListener(ev, fn) end
+function memo.subRT(ev, tbl, fn) tbl[ev] = fn; Runtime:addEventListener(ev, tbl) end
+function memo.subLF(ev, tbl, fn) tbl:addEventListener(ev, fn) end
+function memo.subLT(ev, tbl, fn) tbl[ev] = fn; tbl:addEventListener(ev) end
 
--- Unsubscribe function @fn from @channel
-function memo.unsub(channel, fn)
-  Runtime:removeEventListener(channel, fn)
-end
+function memo.unsubRF(ev, fn) Runtime:removeEventListener(ev, fn) end
+function memo.unsubRT(ev, tbl) Runtime:removeEventListener(ev, tbl) end
+function memo.unsubLF(ev, tbl, fn) tbl:removeEventListener(ev, fn) end
+function memo.unsubLT(ev, tbl) tbl:removeEventListener(ev) end
 
--- Subscribe @object to @channel with function @fn
--- Can access data via `event.data` @fn args `function(self, event)`
-function memo.subo(object, channel, fn)
-  object[channel] = fn
-  Runtime:addEventListener(channel, object)
-end
-
--- Unsubscribe @object from @channel
-function memo.unsubo(object, channel)
-  Runtime:removeEventListener(channel, object)
-end
-
--- Access the most recent `event.data` for @channel
-function memo.stateOf(channel)
-  return state[channel]
+function memo.peak(ev)
+  return state[ev]
 end
 
 return memo
